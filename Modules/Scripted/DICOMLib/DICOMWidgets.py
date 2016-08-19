@@ -279,22 +279,42 @@ class DICOMDetailsPopup(VTKObservationMixin):
     self.viewMetadataButton.connect('clicked()', self.onViewHeaderButton)
     self.viewMetadataButton.connect('clicked()', self.headerPopup.open)
 
-    # Volume name template
+    ## Volume name template
     self.volumeNameTemplateFrame = qt.QWidget()
     self.layout.addWidget(self.volumeNameTemplateFrame)
     self.volumeNameTemplateFrame.visible = self.advancedView  # Display only in advanced mode
-
     self.volumeNameTemplateLayout = qt.QHBoxLayout(self.volumeNameTemplateFrame)
+
+    tooltip = "Use this field to customize the name of the volume that will be created when loading a DICOM study.\n" + \
+              "You can select one of the predefined options in the combobox or type a custom template in the text box.\n" + \
+              "Use tag names (for the most commonly used fields) or tag codes (the most secure way) surrounded " + \
+              "by the '@' symbol. Ex: @seriesName@: @0008,1030@\n" + \
+              "You can check the codes of the DICOM tags clicking the 'Metadata' button"
+    volumeTemplateLabel = qt.QLabel("Volume name template")
+    volumeTemplateLabel.toolTip = tooltip
     self.volumeNameTemplateLayout.addWidget(qt.QLabel("Volume name template"))
-    self.volumeNameLineEdit = qt.QLineEdit()
-    self.volumeNameLineEdit.objectName = "volumeNameLineEdit"
-    self.volumeNameLineEdit.toolTip = "Use Metadata to build the new volume's name. Use tag names (for the most commonly" + \
-                                      " used fields) or tag codes (the secure way) surrounded " + \
-                                      "by '@' symbol. Ex: @seriesName@: @0008,1030@ "
-    self.volumeNameLineEdit.setMinimumWidth(250)
-    self.volumeNameTemplateLayout.addWidget(self.volumeNameLineEdit)
-    self.volumeNameLineEdit.text = self.volumeNameTemplate
-    self.volumeNameLineEdit.connect('textChanged(QString)', self.onVolumeTemplateChanged)
+    infoIcon = slicer.util.mainWindow().style().standardIcon(qt.QStyle.SP_MessageBoxInformation)
+    infoLabel = qt.QLabel()
+    infoLabel.setPixmap(infoIcon.pixmap(20,20))
+    infoLabel.toolTip = tooltip
+    self.volumeNameTemplateLayout.addWidget(infoLabel)
+
+    self.volumeNameTemplateCombobox = qt.QComboBox()
+    self.volumeNameTemplateCombobox.toolTip = tooltip
+    self.volumeNameTemplateLayout.addWidget(self.volumeNameTemplateCombobox)
+
+    self._loadPredefinedNameTemplates_()
+    self.volumeNameTemplateCombobox.currentIndex = settingsValue('DICOM/volumeNameTemplateIndex', 0, converter=int)
+    self.volumeNameTemplateCombobox.connect("currentIndexChanged (int)", self.onVolumeTemplateComboboxChanged)
+
+
+    self.volumeNameTemplateLineEdit = qt.QLineEdit()
+    self.volumeNameTemplateLineEdit.objectName = "volumeNameLineEdit"
+    self.volumeNameTemplateLineEdit.toolTip = tooltip
+    self.volumeNameTemplateLineEdit.setMinimumWidth(250)
+    self.volumeNameTemplateLineEdit.text = self.volumeNameTemplate
+    self.volumeNameTemplateLayout.addWidget(self.volumeNameTemplateLineEdit)
+    self.volumeNameTemplateLineEdit.connect('textChanged(QString)', self.onVolumeTemplateChanged)
 
     self.examineButton = qt.QPushButton('Examine')
     self.actionButtonLayout.addWidget(self.examineButton)
@@ -358,6 +378,22 @@ class DICOMDetailsPopup(VTKObservationMixin):
       self.checkBox = self.pluginSelector.checkBoxByPlugin[pluginClass]
       self.checkBox.connect('stateChanged(int)', self.onPluginStateChanged)
       self.checkBoxByPlugins.append(self.checkBox)
+
+  def _loadPredefinedNameTemplates_(self):
+    """Load the default name templates for DICOM renaming (options in the combobox under the advanced section)"""
+    index=0
+    self.volumeNameTemplateCombobox.addItem("Series number: Series description (DEFAULT)")
+    self.volumeNameTemplateCombobox.setItemData(index, "@SeriesNumber@: @SeriesDescription@")
+    index=1
+    self.volumeNameTemplateCombobox.addItem("Patient Id: Series description")
+    self.volumeNameTemplateCombobox.setItemData(index, "@PatientID@: @SeriesDescription@")
+    index=2
+    self.volumeNameTemplateCombobox.addItem("Patient Id: Series description (Series date and time)")
+    self.volumeNameTemplateCombobox.setItemData(index, "@PatientID@: @SeriesDescription@ (@(0008, 0021)@ @(0008, 0030)@)")
+    index=3
+    self.volumeNameTemplateCombobox.addItem("Accesion number")
+    self.volumeNameTemplateCombobox.setItemData(index, "@(0008, 0050)@")
+
 
   def onDatabaseDirectoryChanged(self,databaseDirectory):
     if not hasattr(slicer, 'dicomDatabase') or not slicer.dicomDatabase:
@@ -480,11 +516,19 @@ class DICOMDetailsPopup(VTKObservationMixin):
     settings = qt.QSettings()
     settings.setValue('DICOM/advancedView',int(self.advancedView))
 
+  def onVolumeTemplateComboboxChanged(self, index):
+    self.volumeNameTemplateLineEdit.text = self.volumeNameTemplateCombobox.itemData(index)
+    settings = qt.QSettings()
+    settings.setValue('DICOM/volumeNameTemplateIndex', index)
+
   def onVolumeTemplateChanged(self, text):
     self.volumeNameTemplate = text
     # Save setting
     settings = qt.QSettings()
     settings.setValue('DICOM/volumeNameTemplate', self.volumeNameTemplate)
+    # Set the name in all the plugins (even when they are not selected, because if they are activated later they should
+    # use the current template
+    self.getCurrentSelectedPlugins()
 
   def onHorizontalViewCheckBox(self):
     settings = qt.QSettings()
@@ -628,10 +672,13 @@ class DICOMDetailsPopup(VTKObservationMixin):
     step = 0
 
     loadEnabled = False
-    plugins = self.pluginSelector.selectedPlugins()
+    plugins = self.getCurrentSelectedPlugins()
+    # plugins = self.pluginSelector.selectedPlugins()
     for pluginClass in plugins:
-      if not self.pluginInstances.has_key(pluginClass):
-        self.pluginInstances[pluginClass] = slicer.modules.dicomPlugins[pluginClass]()
+    #   if not self.pluginInstances.has_key(pluginClass):
+    #     self.pluginInstances[pluginClass] = slicer.modules.dicomPlugins[pluginClass]()
+    #     # Set the current volume template name
+    #     self.pluginInstances[pluginClass].volumeNameTemplate = self.volumeNameTemplate
       plugin = self.pluginInstances[pluginClass]
       if self.progress.wasCanceled:
         break
@@ -641,11 +688,6 @@ class DICOMDetailsPopup(VTKObservationMixin):
       slicer.app.processEvents()
 
       try:
-        if self.volumeNameTemplate:
-          plugin.volumeNameTagsTemplate = self.volumeNameTemplate
-        else:
-          # Blank template. Reset to default
-          plugin.resetVolumeNameTagsTemplate()
         loadablesByPlugin[plugin] = plugin.examineForImport(fileLists)
         # If regular method is not overridden (so returns empty list), try old function
         # Ensuring backwards compatibility: examineForImport used to be called examine
@@ -664,6 +706,16 @@ class DICOMDetailsPopup(VTKObservationMixin):
     self.progress = None
 
     return (loadablesByPlugin,loadEnabled)
+
+  def getCurrentSelectedPlugins(self):
+    """Get the current selected plugins and assign them the current volume name template"""
+    plugins = self.pluginSelector.selectedPlugins()
+    for pluginClass in plugins:
+      if not self.pluginInstances.has_key(pluginClass):
+        self.pluginInstances[pluginClass] = slicer.modules.dicomPlugins[pluginClass]()
+      # Set the current volume template name
+      self.pluginInstances[pluginClass].setVolumeNameTemplate(self.volumeNameTemplate)
+    return plugins
 
   def isFileListInCheckedLoadables(self,fileList):
     for plugin in self.loadablesByPlugin:
@@ -708,6 +760,7 @@ class DICOMDetailsPopup(VTKObservationMixin):
 
     # if applicable, find all loadables from the file lists
     loadEnabled = False
+
     if len(referencedFileLists):
       (self.referencedLoadables,loadEnabled) = self.getLoadablesFromFileLists(referencedFileLists)
 

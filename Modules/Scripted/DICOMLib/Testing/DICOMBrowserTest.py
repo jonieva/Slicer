@@ -46,7 +46,7 @@ class DICOMBrowserVolumeNaming(unittest.TestCase):
     """
     self.switchToDICOMModule()
     # Get the data
-    selfTestDir = slicer.app.temporaryPath + '/DICOMBrowserVolumeNaming'
+    selfTestDir = os.path.join(slicer.app.temporaryPath, 'DICOMBrowserVolumeNaming')
     if not os.access(selfTestDir, os.F_OK):
       os.mkdir(selfTestDir)
 
@@ -59,18 +59,18 @@ class DICOMBrowserVolumeNaming(unittest.TestCase):
       urllib.urlretrieve(urlDownload, filePath)
 
     # Load the DICOM file via the DICOM Scalar Volume
-    plugin = slicer.modules.dicomPlugins["DICOMScalarVolumePlugin"]()
-    loadables = plugin.examineForImport([[filePath]])
-    plugin.load(loadables[0])
+plugin = slicer.modules.dicomPlugins["DICOMScalarVolumePlugin"]()
+loadables = plugin.examineForImport([[filePath]])
+plugin.load(loadables[0])
     # Check the volume is using default template (seriesNumber: seriesDescription)
-    self.assertIsNotNone(slicer.util.getNode("6: Unknown"))
+    self.assertIsNotNone(slicer.util.getNode("6: Unknown"), "There is no volume with default name (6: Unknown)")
 
     # Open a new copy of the volume using a different template (Patient name, series number)
-    plugin.loadableCache.clear()  # Clear cache
-    plugin.volumeNameTagsTemplate = "@PatientName@: @0020,0011@"
-    loadables = plugin.examineForImport([[filePath]])
-    plugin.load(loadables[0])
-    slicer.util.getNode("RANDO^PROSTATE: 6")
+plugin.loadableCache.clear()  # Clear cache
+plugin.volumeNameTagsTemplate = "@PatientName@: @0020,0011@"
+loadables = plugin.examineForImport([[filePath]])
+plugin.load(loadables[0])
+    self.assertIsNotNone(slicer.util.getNode("RANDO^PROSTATE: 6"), "There is no volume with name RANDO^PROSTATE: 6")
 
     self.delayDisplay("Test passed!")
 
@@ -83,7 +83,7 @@ class DICOMBrowserTest:
   as a loadable scripted module (with a hidden interface)
   """
   def __init__(self, parent):
-    parent.title = "DICOMBrowserTest"
+    parent.title = "DICOMBrowserTests"
     parent.categories = ["Testing.TestCases"]
     parent.dependencies = ['DICOM']
     parent.contributors = ["Jorge Onieva (BWH)"]
@@ -111,7 +111,7 @@ class DICOMBrowserTest:
 # DICOMBrowserSelfTestWidget
 #
 
-class DICOMBrowserSelfTestWidget:
+class DICOMBrowserVolumeTemplateNamingSelfTestWidget:
   def __init__(self, parent = None):
     self.parent = parent
 

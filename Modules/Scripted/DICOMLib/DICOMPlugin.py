@@ -81,7 +81,8 @@ class DICOMPlugin(object):
     self.tags['seriesDescription'] = "0008,103E"
     self.tags['seriesNumber'] = "0020,0011"
 
-    self.volumeNameTagsTemplate = self.defaultVolumeNameTagsTemplate  # Used to customize volume name
+    self.__volumeNameTagsTemplate__ = self.defaultVolumeNameTagsTemplate  # Used to customize volume name
+    self._invalidateNameCache_ = False
 
   @property
   def defaultVolumeNameTagsTemplate(self):
@@ -91,9 +92,29 @@ class DICOMPlugin(object):
     Default: seriesNumber: seriesDescription (tags 0020,0011 and 0008,1030)"""
     return "@0020,0011@: @0008,1030@"
 
-  def resetVolumeNameTagsTemplate(self):
-    """ Configure the plugin to use the default tags template """
-    self.volumeNameTagsTemplate = self.defaultVolumeNameTagsTemplate
+  @property
+  def invalidateNameCache(self):
+    return self._invalidateNameCache_
+
+  def setVolumeNameTemplate(self, template):
+    """ Set the value of the volume name tags template.
+    If empty, it will be reset to default
+    """
+    if template is None:
+      # Wrong case. Reset (just in case)
+      self.__volumeNameTagsTemplate__ = self.defaultVolumeNameTagsTemplate
+      self._invalidateNameCache_ = True
+    elif template.strip() == "":
+      if self.__volumeNameTagsTemplate__ != self.defaultVolumeNameTagsTemplate:
+        # Invalidate cache
+        self._invalidateNameCache_ = True
+      # Reset to default
+      self.__volumeNameTagsTemplate__ = self.defaultVolumeNameTagsTemplate
+    else:
+      if self.__volumeNameTagsTemplate__ != template:
+        # Template has changed. Invalidate cache
+        self._invalidateNameCache_ = True
+      self.__volumeNameTagsTemplate__ = template
 
   def hashFiles(self,files):
     """Create a hash key for a list of files"""
@@ -167,12 +188,12 @@ class DICOMPlugin(object):
     if not files or len(files) == 0:
       return "Unknown"
 
-    if not self.volumeNameTagsTemplate:
+    if not self.__volumeNameTagsTemplate__:
       # Reset to default template
       self.resetVolumeNameTagsTemplate()
 
     # Get the volume name based on the current template
-    name = self.volumeNameTagsTemplate
+    name = self.__volumeNameTagsTemplate__
     # Replace evey tag found in the template, using a regular expression that will search for this pattern: @DICOM_TAG@
     pattern = ".*?@(.+?)@.*?"
     for expr in re.finditer(pattern, name):

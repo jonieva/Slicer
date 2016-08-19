@@ -49,12 +49,13 @@ class DICOMScalarVolumePluginClass(DICOMPlugin):
     loadables = []
     for files in fileLists:
       cachedLoadables = self.getCachedLoadables(files)
-      if cachedLoadables:
+      if cachedLoadables and not self.invalidateNameCache:
         loadables += cachedLoadables
       else:
         loadablesForFiles = self.examineFiles(files)
         loadables += loadablesForFiles
         self.cacheLoadables(files,loadablesForFiles)
+        self._invalidateNameCache_ = False
 
     # sort the loadables by series number if possible
     loadables.sort(lambda x,y: self.seriesSorter(x,y))
