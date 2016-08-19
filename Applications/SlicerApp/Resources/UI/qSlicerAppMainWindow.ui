@@ -99,13 +99,12 @@
      <property name="title">
       <string>&amp;Toolbars</string>
      </property>
-     <addaction name="WindowToolbarsResetToDefaultAction"/>
     </widget>
-    <addaction name="WindowPythonInteractorAction"/>
     <addaction name="ViewExtensionsManagerAction"/>
     <addaction name="separator"/>
     <addaction name="WindowToolBarsMenu"/>
     <addaction name="LayoutMenu"/>
+    <addaction name="WindowToolbarsResetToDefaultAction"/>
     <addaction name="separator"/>
     <addaction name="WindowErrorLogAction"/>
     <addaction name="separator"/>
@@ -328,7 +327,6 @@
     <bool>false</bool>
    </attribute>
    <addaction name="ViewExtensionsManagerAction"/>
-   <addaction name="WindowPythonInteractorAction"/>
   </widget>
   <action name="FileLoadSceneAction">
    <property name="icon">
@@ -653,27 +651,12 @@
     <string>Ctrl+0</string>
    </property>
   </action>
-  <action name="WindowPythonInteractorAction">
-   <property name="icon">
-    <iconset>
-     <normaloff>:/python-icon.png</normaloff>:/python-icon.png</iconset>
-   </property>
-   <property name="text">
-    <string>Python Interactor</string>
-   </property>
-   <property name="toolTip">
-    <string>Raise the Python Interactor for controlling the application's data, gui and internals.</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+3</string>
-   </property>
-  </action>
   <action name="WindowToolbarsResetToDefaultAction">
    <property name="text">
     <string>Reset to default</string>
    </property>
    <property name="toolTip">
-    <string>Restore the toolbars to their default state</string>
+    <string>Restore all windows and toolbars to their default positions and states</string>
    </property>
   </action>
   <action name="HelpKeyboardShortcutsAction">

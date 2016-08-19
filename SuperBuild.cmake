@@ -91,7 +91,7 @@ mark_as_superbuild(
 
 set(ITK_EXTERNAL_NAME ITKv4)
 
-set(VTK_EXTERNAL_NAME VTKv6)
+set(VTK_EXTERNAL_NAME VTKv7)
 
 set(Slicer_DEPENDENCIES curl teem ${VTK_EXTERNAL_NAME} ${ITK_EXTERNAL_NAME} CTK LibArchive)
 
@@ -179,7 +179,7 @@ list(APPEND Slicer_REMOTE_DEPENDENCIES jqPlot)
 
 Slicer_Remote_Add(OpenIGTLinkIF
   GIT_REPOSITORY ${git_protocol}://github.com/openigtlink/OpenIGTLinkIF.git
-  GIT_TAG 9271ec55d4cb0bbeaee4ead84e8c242e9d0ad320
+  GIT_TAG f3ebcbd78f102f832ed037cbc89b08720e329af1
   OPTION_NAME Slicer_BUILD_OpenIGTLinkIF
   OPTION_DEPENDS "Slicer_BUILD_QTLOADABLEMODULES;Slicer_USE_OpenIGTLink"
   LABELS REMOTE_MODULE
@@ -191,7 +191,7 @@ mark_as_advanced(Slicer_BUILD_MULTIVOLUME_SUPPORT)
 
 Slicer_Remote_Add(MultiVolumeExplorer
   GIT_REPOSITORY ${git_protocol}://github.com/fedorov/MultiVolumeExplorer.git
-  GIT_TAG a0743dc5f63d8d9d93f66596b7eeb255d2ca02bf
+  GIT_TAG 7e4425257c8e8e9ad637ccca99249b1b36b12296
   OPTION_NAME Slicer_BUILD_MultiVolumeExplorer
   OPTION_DEPENDS "Slicer_BUILD_QTLOADABLEMODULES;Slicer_BUILD_MULTIVOLUME_SUPPORT;Slicer_USE_PYTHONQT"
   LABELS REMOTE_MODULE
@@ -200,7 +200,7 @@ list_conditional_append(Slicer_BUILD_MultiVolumeExplorer Slicer_REMOTE_DEPENDENC
 
 Slicer_Remote_Add(MultiVolumeImporter
   GIT_REPOSITORY ${git_protocol}://github.com/fedorov/MultiVolumeImporter.git
-  GIT_TAG 42fb9d84d1a96313a3c5e2a917c078b81dddc90e
+  GIT_TAG 669594fb993b34a104795cd0b1e1a3340c4311c2
   OPTION_NAME Slicer_BUILD_MultiVolumeImporter
   OPTION_DEPENDS "Slicer_BUILD_QTLOADABLEMODULES;Slicer_BUILD_MULTIVOLUME_SUPPORT;Slicer_USE_PYTHONQT"
   LABELS REMOTE_MODULE
@@ -257,8 +257,8 @@ set(BRAINSTools_options
   USE_DWIConvert:BOOL=${Slicer_BUILD_DICOM_SUPPORT} ## Need to figure out library linking
   )
 Slicer_Remote_Add(BRAINSTools
-  GIT_REPOSITORY "${git_protocol}://github.com/BRAINSia/BRAINSTools.git"
-  GIT_TAG "16526a5dbab238dfd9a82298953b277a30b4ef4d"  # post-v4.6.0
+  GIT_REPOSITORY "${git_protocol}://github.com/Slicer/BRAINSTools.git"
+  GIT_TAG "47dc8e66860be2bb074d17de18129978cb1ca93a" # master (v4.7.0) + Fix for BRAINSia/BRAINSTools#285
   OPTION_NAME Slicer_BUILD_BRAINSTOOLS
   OPTION_DEPENDS "Slicer_BUILD_CLI_SUPPORT;Slicer_BUILD_CLI"
   LABELS REMOTE_MODULE
@@ -268,7 +268,7 @@ list_conditional_append(Slicer_BUILD_BRAINSTOOLS Slicer_REMOTE_DEPENDENCIES BRAI
 
 Slicer_Remote_Add(EMSegment
   SVN_REPOSITORY "http://svn.slicer.org/Slicer3/branches/Slicer4-EMSegment"
-  SVN_REVISION -r "17117"
+  SVN_REVISION -r "17123"
   OPTION_NAME Slicer_BUILD_EMSegment
   OPTION_DEPENDS "Slicer_BUILD_BRAINSTOOLS;Slicer_BUILD_QTLOADABLEMODULES;Slicer_USE_PYTHONQT_WITH_TCL"
   LABELS REMOTE_MODULE
@@ -303,7 +303,7 @@ list_conditional_append(Slicer_BUILD_CompareVolumes Slicer_REMOTE_DEPENDENCIES C
 
 Slicer_Remote_Add(LandmarkRegistration
   GIT_REPOSITORY "${git_protocol}://github.com/pieper/LandmarkRegistration"
-  GIT_TAG "1ff06df86c56f1f584151cf9cc966d78094bbca2"
+  GIT_TAG "b6198147a57f2fe50aa9ac40194e67064a14a524"
   OPTION_NAME Slicer_BUILD_LandmarkRegistration
   OPTION_DEPENDS "Slicer_BUILD_CompareVolumes;Slicer_USE_PYTHONQT"
   LABELS REMOTE_MODULE
@@ -314,7 +314,7 @@ Slicer_Remote_Add(SlicerDMRI
   GIT_REPOSITORY "${git_protocol}://github.com/SlicerDMRI/SlicerDMRI"
   # SlicerDMRI Maintainer: If new revision of the extension add or remove modules, consider updating
   #                        the module lists below. Thanks.
-  GIT_TAG "b5c262fc50a5ce113a76c90e37dff1b12643000a"
+  GIT_TAG "248df4bce1ab63333a8ea6402b4bae0d841d6ff6"
   OPTION_NAME Slicer_BUILD_SlicerDMRI
   OPTION_DEPENDS "Slicer_BUILD_DIFFUSION_SUPPORT"
   LABELS REMOTE_EXTENSION

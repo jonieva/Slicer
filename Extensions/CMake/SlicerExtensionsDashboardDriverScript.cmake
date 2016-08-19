@@ -202,6 +202,7 @@ setIfNotDefined(CTEST_PARALLEL_LEVEL 8)
 setIfNotDefined(MIDAS_PACKAGE_URL "http://slicer.kitware.com/midas3")
 setIfNotDefined(MIDAS_PACKAGE_EMAIL "MIDAS_PACKAGE_EMAIL-NOTDEFINED" OBFUSCATE)
 setIfNotDefined(MIDAS_PACKAGE_API_KEY "MIDAS_PACKAGE_API_KEY-NOTDEFINED" OBFUSCATE)
+setIfNotDefined(CTEST_DROP_SITE "slicer.cdash.org")
 
 #-----------------------------------------------------------------------------
 # The following variable can be used while testing the driver scripts
@@ -374,6 +375,12 @@ macro(run_ctest)
     message("Skipping run_ctest() - Slicer build in PROGRESS")
   else()
 
+    message("Configuring ${CTEST_BINARY_DIRECTORY}/CTestConfig.cmake")
+    configure_file(
+      ${CTEST_SOURCE_DIRECTORY}/CTestConfig.cmake.in
+      ${CTEST_BINARY_DIRECTORY}/CTestConfig.cmake
+      )
+
     ctest_start(${model} TRACK ${track})
 
     if(NOT EXTENSIONS_BUILDSYSTEM_TESTING AND run_ctest_with_update)
@@ -441,7 +448,7 @@ ${ADDITIONAL_CMAKECACHE_OPTION}
 
         #set(label Slicer)
 
-        set_property(GLOBAL PROPERTY SubProject ${label})
+        #set_property(GLOBAL PROPERTY SubProject ${label})
         set_property(GLOBAL PROPERTY Label ${label})
 
         ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" SOURCE "${EXTENSIONS_BUILDSYSTEM_SOURCE_DIRECTORY}")

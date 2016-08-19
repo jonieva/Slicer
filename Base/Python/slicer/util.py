@@ -54,7 +54,8 @@ def sourceDir():
 #
 
 def importVTKClassesFromDirectory(directory, dest_module_name, filematch = '*'):
-  importClassesFromDirectory(directory, dest_module_name, 'vtkclass', filematch)
+  from vtk import vtkObjectBase
+  importClassesFromDirectory(directory, dest_module_name, vtkObjectBase, filematch)
 
 def importQtClassesFromDirectory(directory, dest_module_name, filematch = '*'):
   importClassesFromDirectory(directory, dest_module_name, 'PythonQtClassWrapper', filematch)
@@ -63,13 +64,12 @@ def importQtClassesFromDirectory(directory, dest_module_name, filematch = '*'):
 # call to ``importClassesFromDirectory()`` will be indicated by
 # adding an entry to the ``__import_classes_cache`` set.
 #
-# Each entry is a tuple of form (directory, dest_module_name, type_name, filematch)
+# Each entry is a tuple of form (directory, dest_module_name, type_info, filematch)
 __import_classes_cache = set()
 
-def importClassesFromDirectory(directory, dest_module_name, type_name, filematch = '*'):
-
+def importClassesFromDirectory(directory, dest_module_name, type_info, filematch = '*'):
   # Create entry for __import_classes_cache
-  cache_key = ",".join([directory, dest_module_name, type_name, filematch])
+  cache_key = ",".join([str(arg) for arg in [directory, dest_module_name, type_info, filematch]])
   # Check if function has already been called with this set of parameters
   if cache_key in __import_classes_cache:
     return
@@ -81,15 +81,15 @@ def importClassesFromDirectory(directory, dest_module_name, type_name, filematch
       continue
     try:
       from_module_name = os.path.splitext(os.path.basename(fname))[0]
-      importModuleObjects(from_module_name, dest_module_name, type_name)
+      importModuleObjects(from_module_name, dest_module_name, type_info)
     except ImportError as detail:
       import sys
       print(detail, file=sys.stderr)
 
   __import_classes_cache.add(cache_key)
 
-def importModuleObjects(from_module_name, dest_module_name, type_name):
-  """Import object of type 'type_name' from module identified
+def importModuleObjects(from_module_name, dest_module_name, type_info):
+  """Import object of type 'type_info' (str or type) from module identified
   by 'from_module_name' into the module identified by 'dest_module_name'."""
 
   # Obtain a reference to the module identifed by 'dest_module_name'
@@ -111,8 +111,17 @@ def importModuleObjects(from_module_name, dest_module_name, type_name):
     # Obtain a reference associated with the current object
     item = getattr(module, item_name)
 
-    # Add the object to dest_module_globals_dict if any
-    if type(item).__name__ == type_name:
+    # Check type match by type or type name
+    match = False
+    if isinstance(type_info, type):
+      try:
+        match = issubclass(item, type_info)
+      except TypeError as e:
+        pass
+    else:
+      match = type(item).__name__ == type_info
+
+    if match:
       setattr(dest_module, item_name, item)
 
 #
@@ -135,7 +144,10 @@ def mainWindow(verbose = True):
   return lookupTopLevelWidget('qSlicerAppMainWindow', verbose)
 
 def pythonShell(verbose = True):
-  return lookupTopLevelWidget('pythonConsole', verbose)
+  console = slicer.app.pythonConsole()
+  if not console and verbose:
+    print("Failed to obtain reference to python shell", file=sys.stderr)
+  return console
 
 def showStatusMessage(message, duration = 0):
   mw = mainWindow(verbose=False)
@@ -459,45 +471,63 @@ def resetSliceViews():
 #
 
 def getNodes(pattern="*", scene=None, useLists=False):
-    """Return a dictionary of nodes where the name or id matches the ``pattern``.
-    By default, ``pattern`` is a wildcard and it returns all nodes associated
-    with ``slicer.mrmlScene``.
-    If multiple node share the same name, using ``useLists=False`` (default behavior)
-    returns only the last node with that name. If ``useLists=True``, it returns
-    a dictionary of lists of nodes.
-    """
-    import slicer, collections, fnmatch
-    nodes = collections.OrderedDict()
-    if scene is None:
-      scene = slicer.mrmlScene
-    count = scene.GetNumberOfNodes()
-    for idx in range(count):
-      node = scene.GetNthNode(idx)
-      name = node.GetName()
-      id = node.GetID()
-      if (fnmatch.fnmatchcase(name, pattern) or
-          fnmatch.fnmatchcase(id, pattern)):
-        if useLists:
-          nodes.setdefault(node.GetName(), []).append(node)
-        else:
-          nodes[node.GetName()] = node
-    return nodes
+  """Return a dictionary of nodes where the name or id matches the ``pattern``.
+  By default, ``pattern`` is a wildcard and it returns all nodes associated
+  with ``slicer.mrmlScene``.
+  If multiple node share the same name, using ``useLists=False`` (default behavior)
+  returns only the last node with that name. If ``useLists=True``, it returns
+  a dictionary of lists of nodes.
+  """
+  import slicer, collections, fnmatch
+  nodes = collections.OrderedDict()
+  if scene is None:
+    scene = slicer.mrmlScene
+  count = scene.GetNumberOfNodes()
+  for idx in range(count):
+    node = scene.GetNthNode(idx)
+    name = node.GetName()
+    id = node.GetID()
+    if (fnmatch.fnmatchcase(name, pattern) or
+        fnmatch.fnmatchcase(id, pattern)):
+      if useLists:
+        nodes.setdefault(node.GetName(), []).append(node)
+      else:
+        nodes[node.GetName()] = node
+  return nodes
 
 def getNode(pattern="*", index=0, scene=None):
-    """Return the indexth node where name or id matches ``pattern``.
-    By default, ``pattern`` is a wildcard and it returns the first node
-    associated with ``slicer.mrmlScene``.
-    """
-    nodes = getNodes(pattern, scene)
-    try:
-      return nodes.values()[index]
-    except IndexError:
-      return None
+  """Return the indexth node where name or id matches ``pattern``.
+  By default, ``pattern`` is a wildcard and it returns the first node
+  associated with ``slicer.mrmlScene``.
+  """
+  nodes = getNodes(pattern, scene)
+  try:
+    return nodes.values()[index]
+  except IndexError:
+    return None
 
-def getFirstNodeByClassByName(className, name, scene=None):
+def getNodesByClass(className, scene=None):
+  """Return all nodes in the scene of the specified class.
+  """
   import slicer
   if scene is None:
-      scene = slicer.mrmlScene
+    scene = slicer.mrmlScene
+  nodes = slicer.mrmlScene.GetNodesByClass(className)
+  nodes.UnRegister(slicer.mrmlScene)
+  nodeList = []
+  nodes.InitTraversal()
+  node = nodes.GetNextItemAsObject()
+  while node:
+    nodeList.append(node)
+    node = nodes.GetNextItemAsObject()
+  return nodeList
+
+def getFirstNodeByClassByName(className, name, scene=None):
+  """Return the frist node in the scene that matches the specified node name and node class.
+  """
+  import slicer
+  if scene is None:
+    scene = slicer.mrmlScene
   nodes = scene.GetNodesByClassByName(className, name)
   nodes.UnRegister(nodes)
   if nodes.GetNumberOfItems() > 0:
@@ -511,7 +541,7 @@ def getFirstNodeByName(name, className=None):
   """
   import slicer
   scene = slicer.mrmlScene
-  return scene.GetFirstNode(name, className, [0], False)
+  return scene.GetFirstNode(name, className, None, False)
 
 class NodeModify:
   """Context manager to conveniently compress mrml node modified event.

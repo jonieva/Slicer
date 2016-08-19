@@ -189,8 +189,8 @@ if(VTK_DEBUG_LEAKS AND Slicer_HAS_CONSOLE_IO_SUPPORT)
     SCRIPT_ARGS --no-main-window --disable-modules
     TESTNAME_PREFIX nomainwindow_
     )
-  set_tests_properties(py_nomainwindow_${testname}
-    PROPERTIES PASS_REGULAR_EXPRESSION "instances? still around"
+  set_tests_properties(py_nomainwindow_${testname} PROPERTIES
+    PASS_REGULAR_EXPRESSION "instances? still around"
     )
 endif()
 
@@ -205,23 +205,6 @@ set(testname MRMLSceneImportAndExport)
 slicer_add_python_test(
   SCRIPT ${testname}.py
   TESTNAME_PREFIX mainwindow_
-  )
-
-set(testname MRMLCreateNodeByClassWithSetReferenceCountToOne)
-slicer_add_python_test(
-  SCRIPT ${testname}.py
-  SCRIPT_ARGS --no-main-window --disable-modules
-  TESTNAME_PREFIX nomainwindow_
-  )
-# The test application is expected to crash. If a test is run from
-# Visual Studio by building RUN_TESTS target and it crashes then an error popup is displayed
-# and test execution is stopped until the user closes the popup - causing delays in the
-# test execution.
-# DASHBOARD_TEST_FROM_CTEST variable is set in order to force CTest to disable debugger
-# and error reporting popups and thus avoiding test execution delays.
-set_tests_properties(py_nomainwindow_${testname} PROPERTIES 
-  ENVIRONMENT "DASHBOARD_TEST_FROM_CTEST=1"
-  WILL_FAIL TRUE
   )
 
 slicer_add_python_unittest(
@@ -307,6 +290,7 @@ if(Slicer_USE_QtTesting AND Slicer_USE_PYTHONQT)
   slicer_add_python_unittest(SCRIPT RSNAVisTutorial.py)
   slicer_add_python_unittest(SCRIPT RSNAQuantTutorial.py)
   slicer_add_python_unittest(SCRIPT slicerCloseCrashBug2590.py)
+  slicer_add_python_unittest(SCRIPT SlicerOrientationSelectorTest.py)
   slicer_add_python_unittest(SCRIPT ViewControllersSliceInterpolationBug1926.py)
   slicer_add_python_unittest(SCRIPT RSNA2012ProstateDemo.py)
   slicer_add_python_unittest(SCRIPT JRC2013Vis.py)
@@ -332,6 +316,7 @@ if(Slicer_USE_QtTesting AND Slicer_USE_PYTHONQT)
     RSNAVisTutorial.py
     RSNAQuantTutorial.py
     slicerCloseCrashBug2590.py
+    SlicerOrientationSelectorTest.py
     ViewControllersSliceInterpolationBug1926.py  
     RSNA2012ProstateDemo.py
     JRC2013Vis.py

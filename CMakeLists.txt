@@ -359,7 +359,6 @@ mark_as_advanced(ADDITIONAL_CXX_FLAGS)
 #-----------------------------------------------------------------------------
 include(CMakeParseArguments)
 include(Slicer3PluginsMacros)
-include(SlicerMacroExtractRepositoryInfo)
 include(SlicerMacroGetOperatingSystemArchitectureBitness)
 if(Slicer_BUILD_I18N_SUPPORT)
   include(SlicerMacroTranslation)
@@ -461,31 +460,7 @@ message(STATUS "Configuring ${Slicer_MAIN_PROJECT_APPLICATION_NAME} text of disc
 # Releases define a tweak level
 #set(Slicer_VERSION_TWEAK 1)
 #set(Slicer_VERSION_RC 0)
-
-SlicerMacroExtractRepositoryInfo(VAR_PREFIX Slicer) # Used to configure vtkSlicerVersionConfigure.h.in
-string(REGEX REPLACE ".*([0-9][0-9][0-9][0-9]\\-[0-9][0-9]\\-[0-9][0-9]).*" "\\1"
-  Slicer_BUILDDATE "${Slicer_WC_LAST_CHANGED_DATE}")
-
-if(NOT Slicer_FORCED_WC_REVISION STREQUAL "")
-  set(Slicer_WC_REVISION "${Slicer_FORCED_WC_REVISION}")
-endif()
-
-if("${Slicer_VERSION_TWEAK}" STREQUAL "")
-  set(_version_qualifier "-${Slicer_BUILDDATE}")
-elseif("${Slicer_VERSION_TWEAK}" GREATER 0)
-  set(_version_qualifier "-${Slicer_VERSION_TWEAK}")
-endif()
-
-# XXX This variable should not be set explicitly
-set(Slicer_VERSION      "${Slicer_VERSION_MAJOR}.${Slicer_VERSION_MINOR}")
-set(Slicer_VERSION_FULL "${Slicer_VERSION}.${Slicer_VERSION_PATCH}")
-if(Slicer_VERSION_RC)
-  set(Slicer_VERSION_FULL "${Slicer_VERSION_FULL}-rc${Slicer_VERSION_RC}")
-endif()
-set(Slicer_VERSION_FULL "${Slicer_VERSION_FULL}${_version_qualifier}")
-
-message(STATUS "Configuring ${Slicer_MAIN_PROJECT_APPLICATION_NAME} version [${Slicer_VERSION_FULL}]")
-message(STATUS "Configuring ${Slicer_MAIN_PROJECT_APPLICATION_NAME} revision [${Slicer_WC_REVISION}]")
+include(SlicerVersion)
 
 #-----------------------------------------------------------------------------
 # Slicer sub-directories
@@ -537,7 +512,7 @@ if(Slicer_BUILD_CLI_SUPPORT)
 endif()
 
 #-----------------------------------------------------------------------------
-# VTKv6 - Slicer_VTK_COMPONENTS
+# VTKv7 - Slicer_VTK_COMPONENTS
 #-----------------------------------------------------------------------------
 set(Slicer_VTK_RENDERING_BACKEND "OpenGL" CACHE STRING "Choose the rendering backend.")
 set_property(CACHE Slicer_VTK_RENDERING_BACKEND PROPERTY STRINGS "OpenGL" "OpenGL2")
@@ -549,7 +524,6 @@ set(Slicer_VTK_COMPONENTS
   vtkFiltersFlowPaths
   vtkFiltersGeometry
   vtkGUISupportQtOpenGL
-  vtkGUISupportQtWebkit
   vtkGUISupportQtSQL
   vtkIOImage
   vtkIOLegacy
@@ -750,6 +724,7 @@ if(BUILD_TESTING)
     COPYONLY)
 
   add_subdirectory(CMake/Testing)
+  add_subdirectory(Extensions/CMake/Testing)
 
   if(Slicer_BUILD_CLI_SUPPORT)
     set(SEM_LAUNCH_COMMAND ${Slicer_LAUNCH_COMMAND})
@@ -773,7 +748,7 @@ endif()
 #-----------------------------------------------------------------------------
 # VTK
 #-----------------------------------------------------------------------------
-find_package(VTK 6.1 COMPONENTS ${Slicer_VTK_COMPONENTS} REQUIRED NO_MODULE)
+find_package(VTK 7.1 COMPONENTS ${Slicer_VTK_COMPONENTS} REQUIRED NO_MODULE)
 if(NOT TARGET vtkGUISupportQt)
   message(FATAL_ERROR "error: VTK was not configured to use QT, you probably need "
                     "to recompile it with VTK_USE_GUISUPPORT ON, VTK_Group_Qt ON, "
@@ -1056,7 +1031,7 @@ get_property(Slicer_QM_OUTPUT_DIRS GLOBAL PROPERTY Slicer_QM_OUTPUT_DIRS)
 
 set(files
   vtkSlicerConfigure.h
-  vtkSlicerVersionConfigure.h
+  vtkSlicerVersionConfigureInternal.h
   )
 foreach(f ${files})
   configure_file(
@@ -1064,10 +1039,16 @@ foreach(f ${files})
     ${CMAKE_CURRENT_BINARY_DIR}/${f}
     )
 endforeach()
+
+# Add target configuring 'vtkSlicerVersionConfigure.h' at build time.
+include(SlicerConfigureVersionHeaderTarget)
+add_dependencies(SlicerBaseLogic SlicerConfigureVersionHeader)
+
+list(APPEND files ${CMAKE_CURRENT_BINARY_DIR}/vtkSlicerVersionConfigure.h)
+
 if(NOT Slicer_INSTALL_NO_DEVELOPMENT)
-  install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/vtkSlicerConfigure.h"
-    "${CMAKE_CURRENT_BINARY_DIR}/vtkSlicerVersionConfigure.h"
+  install(
+    FILES ${files}
     DESTINATION ${Slicer_INSTALL_INCLUDE_DIR} COMPONENT Development
     )
 endif()

@@ -544,7 +544,10 @@ void vtkMRMLScene::CopyRegisteredNodesToScene(vtkMRMLScene *scene)
     for (unsigned int i=0; i<this->RegisteredNodeClasses.size(); i++)
       {
       node = this->RegisteredNodeClasses[i]->CreateNodeInstance();
-      scene->RegisterNodeClass(node);
+      if (!scene->GetClassNameByTag(node->GetNodeTagName()))
+        {
+        scene->RegisterNodeClass(node);
+        }
       node->Delete();
       }
     }
@@ -2172,7 +2175,8 @@ std::string vtkMRMLScene::GenerateUniqueName(vtkMRMLNode* node)
 {
   if (!node)
     {
-    vtkWarningMacro("vtkMRMLScene::GenerateUniqueName: input node is invalid");
+    vtkErrorMacro("vtkMRMLScene::GenerateUniqueName: input node is invalid");
+    return "";
     }
   return this->GenerateUniqueName(node->GetNodeTagName());
 }
@@ -2191,7 +2195,7 @@ std::string vtkMRMLScene::GenerateUniqueName(const std::string& baseName)
 const char* vtkMRMLScene::GetUniqueNameByString(const char* baseName)
 {
   static std::string unsafeName;
-  unsafeName = this->GenerateUniqueName(baseName);
+  unsafeName = this->GenerateUniqueName(baseName ? baseName : "Node");
   return unsafeName.c_str();
 }
 
